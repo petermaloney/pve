@@ -9,15 +9,16 @@ import sys
 import argparse
 import json
 
+# Some defaults
 format_json = False
+storepath = "/mnt/datastore"
+all = False
 
 def scan_vmid(datastore, vmid):
     if not vmid:
         raise Exception("vmid is blank")
 
-    datastore_path = "/mnt/datastore/%s/vm/" % (datastore)
-
-    scan_path = os.path.join(datastore_path, vmid)
+    scan_path = os.path.join(datastore, vmid)
 
     # Get all .img.fidx file paths for the chosen VM
     filearray = []
@@ -43,7 +44,6 @@ def scan_vmid(datastore, vmid):
             filename = os.path.basename(filepath)
             # remove .img.fidx since it's just redundant (duplicated, always there, always the same)?
             filename = filename[0:len(filename)-len(".img.fidx")]
-
 #            print("DEBUG: snapshot = %s" % snapshot)
             with open(filepath, "rb") as f:
                 f.seek(4096)
@@ -58,7 +58,7 @@ def scan_vmid(datastore, vmid):
                     chunkarray.add(file_chunk)
                 if new_unique_chunks:
                     new_chunks = len(new_unique_chunks)
-                else:
+                elif all:
                     new_chunks = 0
 
                 if format_json:
@@ -86,13 +86,21 @@ if __name__ == "__main__":
     parser.add_argument('-j', '--json', action='store_const',
                     const=True, default=False,
                     help='enable json output')
+    parser.add_argument('-p', '--path', metavar='path', type=str,
+                    help='path to datastores', default='')
+    parser.add_argument('-a', '--all', action='store_const',
+                    const=True, default=False,
+                    help='show snapshots and images that have no new chunks')
 
     args = parser.parse_args()
 
     format_json = args.json
+    all = args.all
 
+    if len(args.path) > 0:
+        storepath = args.path
+    datastore_path = "/%s/%s/vm/" % (storepath,args.datastore)
     if len(args.vmids) == 0:
-        datastore_path = "/mnt/datastore/%s/vm/" % (args.datastore)
         vmids_list = []
         for f in sorted(os.listdir(datastore_path)):
             fp = os.path.join(datastore_path, f)
@@ -105,7 +113,7 @@ if __name__ == "__main__":
     for vmid in vmids_list:
         if not format_json:
             print("vmid = %s" % vmid)
-        snapshots = scan_vmid(args.datastore, vmid)
+        snapshots = scan_vmid(datastore_path, vmid)
 
         if format_json:
             vmids += [{"vmid": vmid, "snapshots": snapshots}]
