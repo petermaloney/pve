@@ -10,7 +10,6 @@ import argparse
 import json
 
 format_json = False
-all = False
 
 def scan_vmid(datastore, vmid):
     if not vmid:
@@ -59,10 +58,8 @@ def scan_vmid(datastore, vmid):
                     chunkarray.add(file_chunk)
                 if new_unique_chunks:
                     new_chunks = len(new_unique_chunks)
-                elif all:
-                    new_chunks = 0
                 else:
-                    continue
+                    new_chunks = 0
 
                 if format_json:
                     if snapshot in snapshots:
@@ -89,14 +86,10 @@ if __name__ == "__main__":
     parser.add_argument('-j', '--json', action='store_const',
                     const=True, default=False,
                     help='enable json output')
-    parser.add_argument('-a', '--all', action='store_const',
-                    const=True, default=False,
-                    help='show snapshots and images that have no new chunks')
 
     args = parser.parse_args()
 
     format_json = args.json
-    all = args.all
 
     if len(args.vmids) == 0:
         datastore_path = "/mnt/datastore/%s/vm/" % (args.datastore)
